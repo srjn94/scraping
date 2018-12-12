@@ -6,6 +6,7 @@ import re
 import requests
 import ssl
 import sys
+import time
 from bs4 import BeautifulSoup
 from datetime import date, datetime, timedelta
 
@@ -34,6 +35,7 @@ async def get_response_async(url):
         async with aiohttp.ClientSession() as session:
             try:
                 async with session.get(url, ssl=ssl.create_default_context(purpose=ssl.Purpose.CLIENT_AUTH)) as resp:
+                    time.sleep(.1)
                     return await resp.text()
             except aiohttp.client_exceptions.ClientConnectorError as e:
                 return None
@@ -62,16 +64,17 @@ async def scrape_article_from_url(url):
     return {"url": url, "date":date, "headline":headline, "body":body}
 
 def save_article_to_txt(article):
-    name = article["url"].split("/")[-1]
+    name = article["url"].split("/")[-1] + ".txt"
     year, month, day = article["date"].year, article["date"].month, article["date"].day
     dirpath = f"corpus/{year}/{month:02}/{day:02}"
     if not os.path.isdir(dirpath):
         os.makedirs(dirpath)
-    with open(os.path.join(dirpath, name + ".txt"), "w") as f:
+    with open(os.path.join(dirpath, name), "w") as f:
         f.write(article["headline"])
         if article["headline"][-1] != ".": f.write(".")
         f.write(" ")
         f.write(" ".join(article["body"]))
+    return os.path.join(dirpath, name)
 
 async def main():
     assert len(sys.argv) >= 3
@@ -82,7 +85,7 @@ async def main():
         sys.stdout.flush()
         urls = await scrape_urls_from_sitemap(sitemap)
         if urls[0] is None: 
-            log(f"Failed to scrape from sitemap {sitemap} ({urls[1]}")
+            log(f"Failed to scrape from sitemap {sitemap} ({urls[1]})")
             badSitemapsLog.write(f"{urls[1]}\t{sitemap}\n")
             continue
         log(f"Scraped from sitemap {sitemap}")
@@ -98,7 +101,7 @@ async def main():
         for future_article in future_articles:
             article = future_article.result()
             if article.get("error") is None:
-                save_article_to_txt(article)
+                log(f"Saved {article['url']} to {save_article_to_txt(article)}")
             else:
                 failures.append(article)
         if failures:
