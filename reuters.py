@@ -43,7 +43,6 @@ async def scrape_urls_from_sitemap(sitemap):
     if text is None:
         return None, "bad response"
     soup = BeautifulSoup(text, "lxml")
-    print(soup.urlset)
     if soup.urlset is None:
         return None, "bad sitemap"
     return [x.loc.text for x in soup.urlset.find_all("url")]
