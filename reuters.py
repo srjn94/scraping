@@ -22,12 +22,12 @@ def log(s):
 
 def initialize_sitemaps(start = "2007-01-01", end = "2018-11-30"):
     sitemaps = []
-    date = datetime.strptime(start, "%Y-%m-%d")
-    while date < datetime.strptime(end, "%Y-%m-%d"):
-        next_date = date + timedelta(days=1)
-        sitemap = sitemapfmt.format(date.strftime(datefmt), next_date.strftime(datefmt))
+    date = datetime.strptime(end, "%Y-%m-%d")
+    while date > datetime.strptime(start, "%Y-%m-%d"):
+        prev_date = date - timedelta(days=1)
+        sitemap = sitemapfmt.format(prev_date.strftime(datefmt), date.strftime(datefmt))
         sitemaps.append(sitemap)
-        date = next_date
+        date = prev_date
     return sitemaps
 
 async def get_response_async(url):
@@ -35,9 +35,11 @@ async def get_response_async(url):
         async with aiohttp.ClientSession() as session:
             try:
                 async with session.get(url, ssl=ssl.create_default_context(purpose=ssl.Purpose.CLIENT_AUTH)) as resp:
-                    time.sleep(.1)
+                    time.sleep(.333)
                     return await resp.text()
-            except aiohttp.client_exceptions.ClientConnectorError as e:
+            except KeyboardInterrupt:
+                sys.exit()
+            except:
                 return None
 
 async def scrape_urls_from_sitemap(sitemap):
